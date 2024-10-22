@@ -28,8 +28,6 @@ Default privacy options for Session Replay protect end user privacy and prevent 
 
 By enabling Mobile Session Replay, you can automatically mask sensitive elements from being recorded through the RUM Mobile SDK. When data is masked, that data is not collected in its original form by Datadog's SDKs and thus is not sent to the backend.
 
-## Configuring masking modes
-
 ## Fine-Grained Masking
 Using the masking modes below, you can override the default setup on a per-application basis. Masking is fine-grained, which means you can override masking for text and inputs, images, and touches individually to create a custom configuration that suits your needs. 
 
@@ -296,7 +294,7 @@ With the `show` setting enabled, all touches that occur during the replay are sh
 {{% /tab %}}
 {{< /tabs >}}
 
-## Legacy masking - Deprecated
+## Legacy Masking - Deprecated
 This masking API is deprecated. Users are encouraged to migrate to the fine-grained masking options described above.
 
 ### Mask all text elements
@@ -410,102 +408,150 @@ With the `allow` setting enabled, all text is revealed.
 {{% /tab %}}
 {{< /tabs >}}
 
-## Configuring Privacy Overrides
+## Privacy Overrides
 
-The sections above describe the global masking levels that apply to the entire application. However, it is also possible to override privacy settings for specific views within the hierarchy. To ensure that overrides are properly considered, they should be applied as early as possible in the view lifecycle. This prevents scenarios where Session Replay might process a view without recognizing the override. 
+The sections above describe the global masking levels that apply to the entire application. However, it is also possible to override these settings at the view level. The same privacy levels as above are available for text and inputs, images, touches, and an additional setting to completely hide a specific view.
 
-When applying overrides, please consider the following:
+To ensure overrides are recognized properly, they should be applied as early as possible in the view lifecycle. This prevents scenarios where Session Replay might process a view before applying the overrides.
 
-• If a `WebView` is marked as `hidden`, it will be replaced with a placeholder in the replay. However, the `WebView` will continue to record and send data, which may incur a performance cost. Therefore, it is recommended to manage the privacy of `WebViews` using the  [browser SDK privacy][1] mechanisms.
+Privacy overrides affect views and their descendants. This means that even if an override is applied to a view where it might have no immediate effect (e.g., applying an image override to a text input), the override still applies to all child views. 
 
-• Privacy overrides, aside from `hidden` and touch privacy, do not affect `WebViews`.
+When a view has an override, its privacy setting automatically propagates to all its child views. Overrides operate using a "nearest parent" principle: if a view has an override, it uses that setting; otherwise, it inherits the privacy level from the closest parent in the hierarchy with an override. If no parent has an override, the view defaults to the application's general masking level.
 
-• Privacy overrides affect views and their descendants. This means that even if an override is applied to a `View` where it would have no effect (e.g., applying an image override to a purely textual view), the override will still override that privacy level on all of its child views. Masking operates according to the "nearest parent" principle. This means that if a `View` has an override, it will adopt that privacy setting. If no override exists, it will inherit the privacy level from the closest parent in the hierarchy with an override. If no parent has an override, the view will default to the application's general masking level. 
 
-### Hidden - privacy override
-
-In some cases, certain elements may be so sensitive that you may prefer to completely hide them in the replay. To achieve this, the element can be marked as `hidden`. When an element is `hidden`, it is replaced by a placeholder labeled "Hidden" in the replay, and its subviews are not captured.
-
-It is important to note that once an element is marked as `hidden`, any overrides applied to its subviews will be ignored. Additionally, marking a `View` as `hidden` will not prevent touch interactions on that element from being recorded. To hide touch interactions as well, you should apply a touch override in addition to marking the element as hidden.
+### Text and Input Override
 
 {{< tabs >}}
 {{% tab "Android" %}}
+
+To override text and input privacy, use `setSessionReplayTextAndInputPrivacy` on a view instance and pass a value from the `TextAndInputPrivacy` enum. Passing `null` removes the override.
+
 {{< code-block lang="kotlin" filename="build.gradle" disable_copy="false" collapsible="true" >}}
-    
-    val view = root.findViewById(...)
-
-    // mark a view as hidden
-    view.setSessionReplayHidden(hide = true)
-
-    // mark a view as no longer hidden
-    view.setSessionReplayHidden(hide = false)
-
+    // Set an text and input override on your view
+    myView.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+    // Remove an image override from your view
+    myView.setSessionReplayTextAndInputPrivacy(null)
 {{< /code-block >}}
 {{% /tab %}}
+
 {{% tab "iOS" %}}
+
+To override text and input privacy, use `dd.sessionReplayOverrides.textAndInputPrivacy` on a view instance and set a value from the `TextAndInputPrivacyLevel` enum. Setting it to `nil` removes the override.
+
+{{< code-block lang="swift" filename="AppDelegate.swift" disable_copy="false" collapsible="true" >}}
+    // Set an text and input override on your view
+    myView.dd.sessionReplayOverrides.textAndInputPrivacy = .maskSensitiveInputs
+    // Remove an image override from your view
+    myView.dd.sessionReplayOverrides.textAndInputPrivacy = nil
+{{< /code-block >}}
 {{% /tab %}}
 {{< /tabs >}}
 
-### Text and input - privacy override
+### Image Override
 
 {{< tabs >}}
 {{% tab "Android" %}}
 
-To override the text and input privacy for a view, call the extension method `setSessionReplayTextAndInputPrivacy` on the view instance and pass a value from the `TextAndInputPrivacy` enum. Passing null to the method will remove the override from the view. 
+To override image privacy, use `setSessionReplayImagePrivacy` on a view instance and pass a value from the `ImagePrivacy` enum. Passing `null` removes the override.
 
 {{< code-block lang="kotlin" filename="build.gradle" disable_copy="false" collapsible="true" >}}
-
-    val view = root.findViewById(...)
-
-    view.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
-
+    // Set an image override on your view
+    myView.setSessionReplayImagePrivacy(ImagePrivacy.MASK_ALL)
+    // Remove an image override from your view
+    myView.setSessionReplayImagePrivacy(null)
 {{< /code-block >}}
 {{% /tab %}}
+
 {{% tab "iOS" %}}
+
+To override image privacy, use `dd.sessionReplayOverrides.imagePrivacy` on a view instance and set a value from the `ImagePrivacyLevel` enum. Setting it to `nil` removes the override.
+
+{{< code-block lang="swift" filename="AppDelegate.swift" disable_copy="false" collapsible="true" >}}
+    // Set an image override on your view
+    myView.dd.sessionReplayOverrides.imagePrivacy = .maskAll
+    // Remove an image override from your view
+    myView.dd.sessionReplayOverrides.imagePrivacy = nil
+{{< /code-block >}}
 {{% /tab %}}
 {{< /tabs >}}
 
-### Image - privacy override
+### Touch Override
 
 {{< tabs >}}
 {{% tab "Android" %}}
 
-To override the image privacy for a view, call the extension method `setSessionReplayImagePrivacy` on the view instance and pass a value from the `ImagePrivacy` enum. Passing null to the method will remove the override from the view.
+To override touch privacy, use `setSessionReplayTouchPrivacy` on a view instance and pass a value from the `TouchPrivacy` enum. Passing `null` removes the override.
 
 {{< code-block lang="kotlin" filename="build.gradle" disable_copy="false" collapsible="true" >}}
-
-    val view = root.findViewById(...)
-
-    view.setSessionReplayImagePrivacy(ImagePrivacy.MASK_ALL)
-
-{{< /code-block >}}
-{{% /tab %}}
-{{% tab "iOS" %}}
-{{% /tab %}}
-{{< /tabs >}}
-
-### Touch - privacy override
-
-{{< tabs >}}
-{{% tab "Android" %}}
-
-To override the touch privacy for a view, call the extension method `setSessionReplayTouchPrivacy` on the view instance and pass a value from the `TouchPrivacy` enum. Passing null to the method will remove the override from the view.
-
-{{< code-block lang="kotlin" filename="build.gradle" disable_copy="false" collapsible="true" >}}
-
-    val view = root.findViewById(...)
-
+    // Set a touch override on your view
     view.setSessionReplayTouchPrivacy(TouchPrivacy.HIDE)
-
+    // Remove a touch override from your view
+    view.setSessionReplayTouchPrivacy(null)
 {{< /code-block >}}
 {{% /tab %}}
+
 {{% tab "iOS" %}}
+
+To override touch privacy, use `dd.sessionReplayOverrides.touchPrivacy` on a view instance and set a value from the `TouchPrivacyLevel` enum. Setting it to `nil` removes the override.
+
+{{< code-block lang="swift" filename="AppDelegate.swift" disable_copy="false" collapsible="true" >}}
+    // Set a touch override on your view
+    myView.dd.sessionReplayOverrides.touchPrivacy = .hide
+    // Remove a touch override from your view
+    myView.dd.sessionReplayOverrides.touchPrivacy = nil
+{{< /code-block >}}
+
 {{% /tab %}}
 {{< /tabs >}}
+
+### Hidden Override
+
+For sensitive elements that need to be completely hidden, use the `hidden` setting.
+
+When an element is `hidden`, it is replaced by a placeholder labeled as "Hidden" in the replay, and its subviews are not recorded.
+
+It is important to note that marking a view as `hidden` will not prevent touch interactions from being recorded on that element. To hide touch interactions as well, use the [touch override][3] in addition to marking the element as hidden.
+
+{{< tabs >}}
+{{% tab "Android" %}}
+
+Use `setSessionReplayHidden(hide = true)` to hide the element. Setting `hide` to `false` removes the override.
+
+{{< code-block lang="kotlin" filename="build.gradle" disable_copy="false" collapsible="true" >}}
+    // Mark a view as hidden
+    myView.setSessionReplayHidden(hide = true)
+    // Remove the override from the view
+    myView.setSessionReplayHidden(hide = false)
+{{< /code-block >}}
+
+**Note**: Setting the `hidden` override to `null` has the same effect as setting it to `false`—it disables the override.
+
+{{% /tab %}}
+
+{{% tab "iOS" %}}
+{{< code-block lang="swift" filename="AppDelegate.swift" disable_copy="false" collapsible="true" >}}
+    // Mark a view as hidden
+    myView.dd.sessionReplayOverrides.hide = true
+    // Remove the override from the view
+    myView.dd.sessionReplayOverrides.hide = false
+{{< /code-block >}}
+
+**Note**: Setting the `hidden` override to `nil` has the same effect as setting it to `false`—it disables the override.
+
+{{% /tab %}}
+{{< /tabs >}}
+
+### Notes on WebViews
+
+• Make sure to enable [Web view instrumentation][2] before applying any override. 
+• Privacy overrides, aside from the `hidden` and `touch` options, are not supported for WebViews. Primarly manage their privacy using the [browser SDK privacy settings][1].
+• When a WebView is marked as `hidden`, it is replaced by a placeholder in the replay. However, the WebView itself continues to collect and send data. To avoid this, it is recommended to primarily use [browser SDK privacy settings][1] for managing WebView privacy, as they provide more targeted control.
+
 
 ## How and what data is masked
 
-This section describes how the Datadog recorder handles masking based on data type and how that data is defined. 
+This section describes how the Datadog recorder handles masking based on data type and how that data is defined.
+
 ### Text masking strategies
 
 Depending on how you've configured your privacy settings, the type of text, and sensitivity of data, Datadog's masking rules apply different strategies to different types of text fields.
@@ -628,4 +674,6 @@ The following chart shows how we apply different image masking strategies:
 
 {{< partial name="whats-next/whats-next.html" >}}
 
-[1]: /real_user_monitoring/browser/privacy_options.md
+[1]: /real_user_monitoring/session_replay/privacy_options
+[2]: /real_user_monitoring/session_replay/mobile/setup_and_configuration#web-view-instrumentation
+[3]: #touch-override
