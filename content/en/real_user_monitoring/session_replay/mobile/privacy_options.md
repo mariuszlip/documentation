@@ -544,8 +544,10 @@ Use `setSessionReplayHidden(hide = true)` to hide the element. Setting `hide` to
 ### Notes on WebViews
 
 • Make sure to enable [Web view instrumentation][2] before applying any override. 
-• Privacy overrides, aside from the `hidden` and `touch` options, are not supported for WebViews. Primarly manage their privacy using the [browser SDK privacy settings][1].
-• When a WebView is marked as `hidden`, it is replaced by a placeholder in the replay. However, the WebView itself continues to collect and send data. To avoid this, it is recommended to primarily use [browser SDK privacy settings][1] for managing WebView privacy, as they provide more targeted control.
+
+• Privacy overrides, aside from the `hidden` and `touch` options, are not supported for `WebViews`. Primarily manage their privacy using the [browser SDK privacy settings][1].
+
+• When a `WebView` is marked as `hidden`, it is replaced by a placeholder in the replay. However, the `WebView` itself continues to collect and send data. To avoid this, it is recommended to primarily use [browser SDK privacy settings][1] for managing `WebView` privacy, as they provide more targeted control.
 
 
 ## How and what data is masked
