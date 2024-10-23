@@ -317,4 +317,4 @@ final configuration = DatadogConfiguration(
 [2]: /ko/logs/log_collection/
 [3]: /ko/real_user_monitoring/browser/
 [4]: /ko/real_user_monitoring/mobile_and_tv_monitoring/setup
-[5]: /ko/error_tracking/default_grouping
+[5]: /ko/error_tracking/error_grouping
